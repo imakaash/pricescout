@@ -1,0 +1,34 @@
+# Apple Human Interface Guidelines-inspired theme (system font, Apple neutrals, Apple blue).
+# Data colours stay on the validated categorical palette (see app/dashboard.py).
+
+[theme]
+font = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif'
+headingFont = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif'
+headingFontWeights = [700, 600, 600, 600, 600, 600]
+baseRadius = "12px"
+buttonRadius = "980px"          # Apple's pill buttons
+showWidgetBorder = false
+chartCategoricalColors = ["#2a78d6", "#eb6834", "#1baf7a", "#6250d6", "#eda100", "#e87ba4", "#008300", "#e34948"]
+
+[theme.light]
+primaryColor = "#0071e3"
+backgroundColor = "#f5f5f7"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#1d1d1f"
+borderColor = "#d2d2d7"
+linkColor = "#0066cc"
+
+[theme.dark]
+primaryColor = "#0a84ff"
+backgroundColor = "#000000"
+secondaryBackgroundColor = "#1c1c1e"
+textColor = "#f5f5f7"
+borderColor = "#38383a"
+linkColor = "#2997ff"
+chartCategoricalColors = ["#3987e5", "#d95926", "#199e70", "#9085e9", "#c98500", "#d55181", "#008300", "#e66767"]
+
+[server]
+headless = true
+
+[client]
+toolbarMode = "minimal"   # hide 'Deploy'

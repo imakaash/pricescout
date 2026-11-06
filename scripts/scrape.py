@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import sys
 import uuid
 from datetime import date
 from pathlib import Path
@@ -34,7 +35,10 @@ def main() -> None:
     ap.add_argument("--category", choices=CATEGORIES, action="append",
                     help="repeatable; default: all")
     ap.add_argument("--max", type=int,
-                    help="max products per category (default: per-retailer limit / #categories)")
+                    help="max products per category (default: the full listing)")
+    ap.add_argument("--detail-budget", type=int, default=settings.scraper_detail_budget,
+                    help="max product pages fetched per run for unknown EANs, split across "
+                         f"categories (default: {settings.scraper_detail_budget})")
     ap.add_argument("--dry-run", action="store_true", help="print results, don't write to the DB")
     ap.add_argument("--from-raw", metavar="YYYY-MM-DD",
                     help="re-parse archived pages from that day instead of fetching (no network)")
@@ -43,7 +47,8 @@ def main() -> None:
     logging.basicConfig(level="INFO", format="%(message)s", handlers=[RichHandler(console=console)])
     logging.getLogger("httpx").setLevel(logging.WARNING)  # one line per request is too noisy
     categories = args.category or CATEGORIES
-    max_per_cat = args.max or settings.scraper_max_products_per_retailer // len(categories)
+    max_per_cat = args.max or sys.maxsize  # full listing (sites still cap pagination themselves)
+    budget_per_cat = args.detail_budget // len(categories)
 
     scraper_cls = SCRAPERS[args.retailer]
     if args.from_raw:
@@ -66,13 +71,16 @@ def main() -> None:
 
     all_offers: list[Offer] = []
     errors = 0
-    console.print(f"[bold]{run_id}[/bold]: {categories}, max {max_per_cat}/category, "
-                  f"delay ≥{fetcher.delay:.0f}s, {len(known_eans)} EANs already known")
+    limit = "full listing" if args.max is None else f"max {args.max}"
+    console.print(f"[bold]{run_id}[/bold]: {categories}, {limit}/category, "
+                  f"detail budget {budget_per_cat}/category, delay ≥{fetcher.delay:.0f}s, "
+                  f"{len(known_eans)} EANs already known")
     for cat in categories:
+        scraper.detail_budget = budget_per_cat  # rank order -> best-sellers get EANs first
         offers: list[Offer] = []
         try:
             for offer in scraper.scrape_category(cat, max_per_cat):
-                offers.append(offer)  # noqa: PERF402 - one by one so a failure keeps partial data
+                offers.append(offer)  # one by one so a failure keeps partial data
         except Exception:  # one category failing shouldn't kill the whole run
             log.exception("category %s failed after %d offers", cat, len(offers))
             errors += 1

@@ -39,18 +39,27 @@ Playwright · DuckDB · Polars · Streamlit · Plotly
 
 ## Roadmap
 - [x] **Phase 0** – Setup: env, local LLM, repo skeleton
-- [ ] **Phase 1** – Polite scrapers + data model
-- [ ] **Phase 2** – LangChain: LLM attribute extraction with structured output
-- [ ] **Phase 3** – Fine-tuning a product-matching model (LoRA / MLX)
-- [ ] **Phase 4** – LangGraph multi-agent weekly analysis
-- [ ] **Phase 5** – KPI dashboard + chat analyst
-- [ ] **Phase 6** – Scheduling, tracing, tests, Docker
+- [x] **Phase 1** – Polite scrapers (MediaMarkt, Alternate, MEDIMAX) + DuckDB data model + synthetic VoltMarkt
+- [x] **Phase 2** – LangChain: attribute extraction (regex + local LLM, structured output)
+- [x] **Phase 3** – LoRA fine-tuned product matcher (Qwen3-0.6B, MLX)
+- [x] **Phase 4** – LangGraph weekly analysis with human-in-the-loop pricing
+- [x] **Phase 5** – Streamlit KPI dashboard + text-to-SQL chat analyst
+- [x] **Phase 6** – Weekly schedule (launchd), CI, Docker *(tracing: open)*
+
+First versions of every phase run end to end; they get more useful as weekly history builds up.
+
+## Weekly pipeline
+```bash
+scripts/run_weekly.sh                 # or install the schedule: scripts/install_schedule.sh
+streamlit run app/dashboard.py        # dashboard
+python scripts/weekly_analysis.py --review   # approve/reject recommendations in the terminal
+```
 
 ## Setup
 ```bash
 conda create -n pricescout python=3.12 -y
 conda activate pricescout
-pip install -e ".[dev]"
+pip install -e ".[dev,mlx]"   # mlx: Apple Silicon only (Phase 3)
 playwright install chromium
 
 brew install ollama

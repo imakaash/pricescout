@@ -63,11 +63,48 @@ CREATE TABLE IF NOT EXISTS scrape_runs (
 """
 
 
+# One place that defines "comparable": every KPI, agent and the dashboard reads this view.
+VIEWS = r"""
+CREATE OR REPLACE VIEW v_offers AS
+SELECT
+    s.*,
+    p.category, p.title, p.brand, p.ean, p.url,
+    CASE
+        WHEN s.availability IN ('AVAILABLE', 'MP_OFFER') THEN 'in_stock'
+        WHEN s.availability = 'TEMPORARILY_NOT_AVAILABLE' THEN 'out_of_stock'
+        WHEN s.availability = 'PERMANENTLY_NOT_AVAILABLE' THEN 'discontinued'
+        WHEN s.availability = 'DIGITAL_SUBSCRIPTION' THEN 'other'
+        WHEN regexp_matches(lower(s.availability), 'sofort verfügbar|lieferung in|auf lager')
+            THEN 'in_stock'
+        WHEN regexp_matches(lower(s.availability), 'in kürze|eingetroffen|beschafft|bestellt')
+            THEN 'delayed'
+        WHEN regexp_matches(lower(s.availability), 'nicht verfügbar|ausverkauft|vergriffen')
+            THEN 'out_of_stock'
+        ELSE 'unknown'
+    END AS availability_norm,
+    -- COALESCE: a NULL seller would make `IN (...)` NULL and silently drop rows downstream.
+    COALESCE(regexp_matches(lower(p.title),
+        'generalüberholt|refurbished|renewed|wie neu|gebraucht|b-ware|aufbereitet')
+     OR s.seller IN ('AfB gemeinnützige GmbH', 'Clevertronic', 'asgoodasnew electronics GmbH',
+                     'buyZOXS', 'cybernerds', 'refurbed', 'Back Market'), FALSE) AS is_refurbished
+FROM price_snapshots s
+JOIN products p USING (retailer, retailer_sku);
+
+-- Offers we compare prices on: new goods, sold by the retailer itself, not known to be
+-- unavailable ('unknown' = text we couldn't map, usually a parser gap, so it stays in).
+CREATE OR REPLACE VIEW v_comparable AS
+SELECT * FROM v_offers
+WHERE NOT is_refurbished AND NOT is_marketplace
+  AND availability_norm IN ('in_stock', 'delayed', 'unknown');
+"""
+
+
 def connect(db_path: str | Path) -> duckdb.DuckDBPyConnection:
     if str(db_path) != ":memory:":
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     con = duckdb.connect(str(db_path))
     con.execute(SCHEMA)
+    con.execute(VIEWS)
     return con
 
 

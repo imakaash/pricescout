@@ -15,7 +15,9 @@ class Settings(BaseSettings):
 
     scraper_user_agent: str = "PriceScoutResearchBot/0.1 (educational project)"
     scraper_min_delay_seconds: float = 5.0
-    scraper_max_products_per_retailer: int = 300
+    # Listings are scraped in full; product pages (only needed for unknown EANs) are capped
+    # per run, so EAN coverage grows week by week without hitting a shop hard.
+    scraper_detail_budget: int = 300
 
 
 settings = Settings()

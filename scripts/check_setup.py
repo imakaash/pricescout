@@ -22,13 +22,13 @@ def check(name: str, fn: Callable[[], str]) -> None:
         detail = fn()
         console.print(f"[green]  OK [/green] {name}  [dim]{detail}[/dim]")
         results.append(True)
-    except Exception as exc:  # noqa: BLE001 - we want to report any failure
+    except Exception as exc:  # report any failure, never crash the checker
         console.print(f"[red]FAIL[/red] {name}  [yellow]{exc}[/yellow]")
         results.append(False)
 
 
 def python_version() -> str:
-    if sys.version_info < (3, 12):  # noqa: UP036 - runtime guard: the wrong env may be active
+    if sys.version_info < (3, 12):  # runtime guard: the wrong env may be active
         raise RuntimeError(f"Python {sys.version.split()[0]} found, need >= 3.12")
     return sys.version.split()[0]
 

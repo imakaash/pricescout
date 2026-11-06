@@ -1,0 +1,21 @@
+{
+  "evaluated_at": "2026-11-06T16:00:02.917355",
+  "rule baseline": {
+    "precision": 0.348,
+    "recall": 1.0,
+    "f1": 0.516,
+    "threshold": 0.05
+  },
+  "Qwen3-0.6B zero-shot": {
+    "precision": 0.448,
+    "recall": 0.812,
+    "f1": 0.578,
+    "threshold": 0.5
+  },
+  "Qwen3-0.6B + LoRA": {
+    "precision": 0.491,
+    "recall": 0.844,
+    "f1": 0.621,
+    "threshold": 0.25
+  }
+}

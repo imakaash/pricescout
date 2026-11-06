@@ -123,11 +123,36 @@ GTIN-14 with a leading 0 → EAN-13, and **validate the check digit**. A typo ca
 create a false cross-retailer match. The tests caught that our own made-up fixture EANs were
 invalid, which shows the check works.
 
+## 8. Top-100 samples vs full listings (incremental crawling)
+The first runs took each shop's **top 100 per category**. Cross-shop overlap by EAN was tiny:
+
+| | TVs | Laptops | Phones |
+|---|---|---|---|
+| EAN at 2 shops | 22 | 10 | 54 |
+| EAN at all 3 | 1 | 5 | 6 |
+| only 1 shop | 244 | 200 | 132 |
+
+Only 98 of 674 products were comparable, because each shop's "top 100" is a *different* list.
+
+**Fix: full listings + a detail budget.**
+- Listing pages are cheap (12–24 products per request), so we scrape them **in full** every week.
+  MediaMarkt caps pagination at 30 pages (360 per category); the others are complete.
+- Product pages (needed only for unknown EANs at Alternate/MEDIMAX) are capped per run
+  (`SCRAPER_DETAIL_BUDGET`, default 300 = 100 per category), spent in **rank order** and
+  cached forever. EAN coverage grows each week (≈8 weeks to cover Alternate's ~2,200 products)
+  without ever hitting a shop hard. This is how real crawlers work: cache what never changes,
+  spread expensive work over time.
+
+**Price-gap sanity check:** MEDIMAX looked +18.9% above the cheapest on average. We checked the
+listing price against the product-page JSON-LD: they agree. The cause is promotions on some
+variants only (A57 128 GB €389 on promo vs 256 GB €659 at full price). Lesson: report the
+**median** gap, and verify outliers against a second source before believing (or dismissing) them.
+
 ## Commands
 ```bash
-python scripts/scrape.py --retailer mediamarkt                    # weekly run (~3 min)
-python scripts/scrape.py --retailer alternate                     # ~2 min weekly (~33 min first run)
-python scripts/scrape.py --retailer medimax                       # ~4 min weekly (~65 min first run)
+python scripts/scrape.py --retailer mediamarkt                    # full listing, ~10 min
+python scripts/scrape.py --retailer alternate                     # full listing + ≤300 product pages
+python scripts/scrape.py --retailer medimax                       # full listing + ≤300 product pages (crawl-delay 10)
 python scripts/scrape.py --retailer mediamarkt --category tv --max 12 --dry-run
 python scripts/scrape.py --retailer mediamarkt --from-raw 2026-11-06   # re-parse, no network
 pytest

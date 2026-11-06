@@ -64,9 +64,14 @@ class CategoryProfile:
 
 # Rough, plausible consumer-electronics economics (not real figures).
 PROFILES: dict[str, CategoryProfile] = {
-    "smartphone": CategoryProfile((0.84, 0.93), 0.04, (2.5, 3.5)),
-    "laptop": CategoryProfile((0.78, 0.89), 0.06, (1.8, 2.6)),
-    "tv": CategoryProfile((0.70, 0.84), 0.08, (2.0, 3.0)),
+    # Targets typical gross margins of ~5-10% (phones), ~8-15% (laptops), ~10-20% (TVs).
+    # (cost is relative to the cheapest competitor; our price usually sits a few % above it)
+    # Elasticity is relative to the cheapest *competitor* for the *identical* product, where
+    # shoppers switch easily, so it's high. Profit-optimal margin ≈ 1/elasticity, so these
+    # ranges are chosen to be consistent with each category's typical margin.
+    "smartphone": CategoryProfile((0.90, 0.96), 0.03, (9.0, 14.0)),
+    "laptop": CategoryProfile((0.84, 0.92), 0.05, (6.0, 10.0)),
+    "tv": CategoryProfile((0.79, 0.89), 0.06, (5.0, 8.0)),
 }
 ROLES = ("traffic_driver", "standard", "margin")
 ROLE_WEIGHTS = (0.2, 0.5, 0.3)
@@ -78,7 +83,8 @@ def charm_price(x: float) -> float:
     if x < 100:
         return math.floor(x) + 0.99 if x % 1 else x - 0.01
     step = 10 if x < 1000 else 50
-    return float(math.ceil(x / step) * step - 1)
+    # nearest (not ceil): ceil in €50 steps turned a €1,154 target into €1,199
+    return float(max(round(x / step), 1) * step - 1)
 
 
 def market_reference(con: duckdb.DuckDBPyConnection, week: date | None = None) -> list[tuple]:
@@ -88,13 +94,12 @@ def market_reference(con: duckdb.DuckDBPyConnection, week: date | None = None) -
     params = [] if week is None else [week]
     return con.execute(
         f"""
-        SELECT p.ean, any_value(p.category), any_value(p.brand),
-               arg_min(p.title, s.price), min(s.price)::DOUBLE,
-               count(DISTINCT p.retailer), min(s.list_rank)
-        FROM price_snapshots s
-        JOIN products p USING (retailer, retailer_sku)
-        WHERE s.week = {week_sql} AND p.ean IS NOT NULL AND NOT s.is_marketplace
-        GROUP BY p.ean
+        SELECT ean, any_value(category), any_value(brand),
+               arg_min(title, price), min(price)::DOUBLE,
+               count(DISTINCT retailer), min(list_rank)
+        FROM v_comparable
+        WHERE week = {week_sql} AND ean IS NOT NULL
+        GROUP BY ean
         """,
         params,
     ).fetchall()
@@ -116,15 +121,17 @@ def build_assortment(
         cands = sorted((m for m in market if m[1] == cat), key=lambda m: (-m[5], m[6] or 999))
         for ean, _, brand, title, ref, _n, rank in cands[:per_category]:
             role = rng.choice(ROLES, p=ROLE_WEIGHTS)
-            base = 60 / math.sqrt(rank or 50) * rng.uniform(0.6, 1.4)
+            # A mid-sized online retailer: a best-seller moves ~10-15 units/week.
+            base = 12 / math.sqrt(rank or 50) * rng.uniform(0.6, 1.4)
             rows.append((
                 _sku(ean), ean, cat, brand, title,
                 round(ref * rng.uniform(*prof.cost_share), 2),
                 prof.min_margin, str(role), round(base, 2), round(rng.uniform(*prof.elasticity), 2),
             ))
-    con.executemany(
-        "INSERT OR REPLACE INTO internal_products VALUES (?,?,?,?,?,?,?,?,?,?)", rows
-    )
+    if rows:
+        con.executemany(
+            "INSERT OR REPLACE INTO internal_products VALUES (?,?,?,?,?,?,?,?,?,?)", rows
+        )
     return len(rows)
 
 
@@ -178,7 +185,8 @@ def simulate_week(
         demand = rng.poisson(max(base * rel ** (-elast), 0.0))
         sold = int(min(demand, stock))
         rows.append((sku, week, price, ref, sold, stock - sold, restocked))
-    con.executemany("INSERT OR REPLACE INTO internal_weekly VALUES (?,?,?,?,?,?,?)", rows)
+    if rows:
+        con.executemany("INSERT OR REPLACE INTO internal_weekly VALUES (?,?,?,?,?,?,?)", rows)
     return len(rows)
 
 

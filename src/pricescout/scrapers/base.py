@@ -26,6 +26,8 @@ class RetailerScraper(ABC):
         self.fetcher = fetcher
         # retailer_sku -> EAN already in the DB, so scrapers can skip detail-page requests.
         self.known_eans = known_eans or {}
+        # Product pages this run may still fetch; None = unlimited.
+        self.detail_budget: int | None = None
 
     @abstractmethod
     def scrape_category(self, category: Category, max_products: int) -> Iterator[Offer]:
@@ -35,6 +37,10 @@ class RetailerScraper(ABC):
         """EAN from the DB cache, else fetch the product page once (EANs never change)."""
         if ean := self.known_eans.get(offer.retailer_sku):
             return ean
+        if self.detail_budget is not None:
+            if self.detail_budget <= 0:
+                return None  # budget spent: a later run will resolve it
+            self.detail_budget -= 1
         html = self.fetcher.get(offer.url, archive_name=f"product_{offer.retailer_sku}")
         ean = product_page_ean(html)
         if ean is None:

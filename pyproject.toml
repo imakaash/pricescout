@@ -34,6 +34,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.3", "ruff>=0.7", "ipykernel>=6.29"]
+# LoRA fine-tuning and the fine-tuned matcher (Apple Silicon only)
+mlx = ["mlx-lm>=0.28"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -44,3 +46,11 @@ target-version = "py312"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff.lint]
+ignore = [
+    "C408",     # dict(...) is idiomatic for Plotly layout arguments
+    "BLE001",   # batch jobs deliberately catch broad exceptions so one bad item can't stop a run
+    "PERF402",  # we append one by one on purpose: a mid-loop failure keeps partial results
+    "UP036",    # the Python-version guard in check_setup.py is a runtime check, not dead code
+]
