@@ -115,7 +115,7 @@ def cmd_apply(db: str) -> None:
     matcher = LLMMatcher(adapter_path=str(ADAPTER))
     now = datetime.now()
     listings = load_listings(con)
-    rows, scored = [], 0
+    rows, scored, model_hits = [], 0, []
     for a, b in candidate_pairs(listings, min_jaccard=0.25):
         if a.key > b.key:
             a, b = b, a
@@ -124,12 +124,20 @@ def cmd_apply(db: str) -> None:
             continue
         if a.ean and b.ean:
             continue  # different valid EANs: different products by definition
-        if baseline.conflicts(a, b):
-            continue
+        if baseline.conflicts(a, b) or baseline.ambiguous(a, b):
+            continue  # hard rules the model can't be trusted with
         p = matcher.p_match(a, b)
         scored += 1
         if p >= thr:
-            rows.append((*a.key, *b.key, "model", round(p, 4), now))
+            model_hits.append((p, a, b))
+    # One-to-one: each listing gets at most one partner per other shop (best score first).
+    # Without this, a vague listing ('MacBook Pro 14 CTO') matched many configurations.
+    taken: set[tuple] = set()
+    for p, a, b in sorted(model_hits, key=lambda h: -h[0]):
+        if (a.key, b.retailer) in taken or (b.key, a.retailer) in taken:
+            continue
+        taken |= {(a.key, b.retailer), (b.key, a.retailer)}
+        rows.append((*a.key, *b.key, "model", round(p, 4), now))
     con.execute("DELETE FROM product_matches")
     if rows:
         con.executemany("INSERT INTO product_matches VALUES (?,?,?,?,?,?,?)", rows)
