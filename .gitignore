@@ -1,0 +1,29 @@
+# --- Scraped data: never commit (retailer ToS / copyright) ---
+data/**
+!data/**/.gitkeep
+*.duckdb
+*.duckdb.wal
+
+# --- Model artifacts ---
+training/data/**
+!training/data/.gitkeep
+training/adapters/
+*.safetensors
+*.gguf
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# --- Env / secrets ---
+.env
+.venv/
+
+# --- OS / IDE ---
+.DS_Store
+.vscode/
+.idea/
