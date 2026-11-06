@@ -28,7 +28,7 @@ def check(name: str, fn: Callable[[], str]) -> None:
 
 
 def python_version() -> str:
-    if sys.version_info < (3, 12):
+    if sys.version_info < (3, 12):  # noqa: UP036 - runtime guard: the wrong env may be active
         raise RuntimeError(f"Python {sys.version.split()[0]} found, need >= 3.12")
     return sys.version.split()[0]
 

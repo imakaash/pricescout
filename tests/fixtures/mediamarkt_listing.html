@@ -1,0 +1,22 @@
+<!doctype html>
+<!-- Synthetic fixture mimicking the structure of a MediaMarkt category page. Not real data. -->
+<html><head>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","itemListElement":[
+ {"@type":"ListItem","position":1,"item":{"@type":"Product","name":"ACME 55 Zoll TV","url":"https://www.mediamarkt.de/de/product/_acme-55-tv-1000001.html","offers":{"@type":"Offer","price":449,"priceCurrency":"EUR"},"aggregateRating":{"@type":"AggregateRating","ratingValue":4.5,"reviewCount":10}}},
+ {"@type":"ListItem","position":2,"item":{"@type":"Product","name":"Widget 43 Zoll TV","url":"https://www.mediamarkt.de/de/product/_widget-43-tv-1000002.html","offers":{"@type":"Offer","price":199,"priceCurrency":"EUR"}}},
+ {"@type":"ListItem","position":3,"item":{"@type":"Product","name":"No Apollo Data TV","url":"https://www.mediamarkt.de/de/product/_noapollo-tv-1000003.html","offers":{"@type":"Offer","price":99.5,"priceCurrency":"EUR"}}}
+]}</script>
+</head><body>
+<script>window.__PRELOADED_STATE__ = {"apolloState":{
+ "ProductList:o{categoryIds}":{"__typename":"ProductList","maxPage":2,"totalProducts":20,"pageSize":12},
+ "GraphqlProduct:Media:de-DE:1000001":{"id":"1000001","title":"ACME 55 Zoll 4K Smart TV","manufacturer":"ACME"},
+ "CofrCoreFeature:Media:de:1000001":{"id":"Media:de:1000001","ean":"4000000000001","manufacturerName":"ACME"},
+ "CofrPriceFeature:{\"id\":\"Media:de:1000001\"}":{"id":"Media:de:1000001","currency":"EUR","isProductOfTypeMarketplace":false,"marketplaceSeller":null,"price":{"amount":449,"shippingCost":39.9},"strikePrice":{"amount":849,"shouldBeStruck":true,"type":"RRP"},"x":undefined},
+ "CofrOnlineStatusFeature:Media:de:1000001":{"id":"Media:de:1000001","onlineStatus":"AVAILABLE"},
+ "GraphqlProduct:Media:de-DE:1000002":{"id":"1000002","title":"Widget 43 Zoll TV","manufacturer":"WIDGET"},
+ "CofrCoreFeature:Media:de:1000002":{"id":"Media:de:1000002","ean":"4000000000002","manufacturerName":"WIDGET"},
+ "CofrPriceFeature:{\"id\":\"Media:de:1000002\"}":{"id":"Media:de:1000002","currency":"EUR","isProductOfTypeMarketplace":true,"marketplaceSeller":{"__typename":"CofrMarketplaceOfferApiActiveOffer","sellerId":"1","sellerName":"Some Seller GmbH"},"price":{"amount":189.99,"shippingCost":0},"strikePrice":null},
+ "CofrOnlineStatusFeature:Media:de:1000002":{"id":"Media:de:1000002","onlineStatus":"AVAILABLE"}
+}};</script>
+</body></html>
