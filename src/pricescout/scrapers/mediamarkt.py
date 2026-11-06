@@ -15,8 +15,10 @@ import re
 from collections.abc import Iterator
 from datetime import datetime
 
+from pricescout.gtin import normalize_gtin
 from pricescout.models import Category, Offer
 from pricescout.scrapers.base import RetailerScraper
+from pricescout.scrapers.common import jsonld_of_type
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +30,6 @@ CATEGORY_SLUGS: dict[str, str] = {
 }
 PAGE_SIZE = 12
 
-_JSONLD_RE = re.compile(r'<script[^>]*application/ld\+json[^>]*>(.*?)</script>', re.DOTALL)
 _STATE_RE = re.compile(r"window\.__PRELOADED_STATE__\s*=\s*")
 _UNDEFINED_RE = re.compile(r"(?<=[:\[,])undefined(?=[,}\]])")  # JS literal -> JSON null
 _SKU_RE = re.compile(r"-(\d+)\.html")
@@ -47,14 +48,7 @@ def extract_preloaded_state(html: str) -> dict:
 
 
 def extract_item_list(html: str) -> list[dict]:
-    for block in _JSONLD_RE.findall(html):
-        try:
-            data = json.loads(block)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(data, dict) and data.get("@type") == "ItemList":
-            return data.get("itemListElement", [])
-    return []
+    return (jsonld_of_type(html, "ItemList") or {}).get("itemListElement", [])
 
 
 def _by_id(apollo: dict, typename: str, sku: str) -> dict:
@@ -116,7 +110,7 @@ def parse_listing(
                 title=product.get("title") or item.get("name", ""),
                 url=url if url.startswith("http") else BASE_URL + url,
                 brand=core.get("manufacturerName") or product.get("manufacturer"),
-                ean=core.get("ean"),
+                ean=normalize_gtin(core.get("ean")),
                 price=float(amount),
                 currency=price.get("currency", "EUR"),
                 strike_price=strike.get("amount") if strike.get("shouldBeStruck", True) else None,

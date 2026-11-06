@@ -15,7 +15,7 @@ def test_parse_listing_basic_fields():
     acme = offers[0]
     assert acme.title == "ACME 55 Zoll 4K Smart TV"  # apollo title preferred over JSON-LD name
     assert acme.brand == "ACME"
-    assert acme.ean == "4000000000001"
+    assert acme.ean == "4000000000006"
     assert acme.price == 449
     assert (acme.strike_price, acme.strike_price_type) == (849, "RRP")
     assert acme.shipping_cost == 39.9

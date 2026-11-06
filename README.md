@@ -1,8 +1,13 @@
 # PriceScout 🔎
 
 **Agentic competitive price intelligence for German consumer electronics.**
-Tracks weekly prices for **TVs, laptops and smartphones** at MediaMarkt and its competitors
-(Saturn, Amazon.de, Otto, Cyberport, notebooksbilliger, Galaxus, …), matches identical products
+Built from the point of view of **VoltMarkt, a fictional retailer**: it tracks weekly prices for
+**TVs, laptops and smartphones** at real competitors that allow polite automated access
+(**MediaMarkt, Alternate, MEDIMAX**; see the
+[competitor survey](docs/learning-notes/01-scrapers-and-data-model.md#7-choosing-a-competitor-a-reality-check-2026-11-06)
+for why others are excluded). VoltMarkt's own costs, stock and sales are
+[simulated](docs/learning-notes/01b-synthetic-internal-data.md) on top of the real market data,
+so the agents can make margin- and stock-aware recommendations. It matches identical products
 across retailers with a **fine-tuned open-source LLM**, and runs a **LangGraph multi-agent system**
 that analyses the market and writes a weekly report. Results are reported on a KPI dashboard.
 

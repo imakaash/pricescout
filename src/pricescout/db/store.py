@@ -96,6 +96,15 @@ def save_offers(con: duckdb.DuckDBPyConnection, offers: Iterable[Offer], run_id:
     return n
 
 
+def known_eans(con: duckdb.DuckDBPyConnection, retailer: str) -> dict[str, str]:
+    """retailer_sku -> EAN for products already resolved (lets scrapers skip detail pages)."""
+    rows = con.execute(
+        "SELECT retailer_sku, ean FROM products WHERE retailer = ? AND ean IS NOT NULL",
+        [retailer],
+    ).fetchall()
+    return dict(rows)
+
+
 def start_run(con: duckdb.DuckDBPyConnection, run_id: str, retailer: str) -> None:
     con.execute(
         "INSERT INTO scrape_runs (run_id, retailer, started_at, status) VALUES (?, ?, ?, 'running')",

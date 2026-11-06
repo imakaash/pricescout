@@ -76,9 +76,58 @@ Both were fixed and **re-parsed from the archive with zero new requests**.
   against UVP for TVs is ~46%, so "% off UVP" says little about real promotions. LOP is the
   more honest signal.
 
+## 7. Choosing a competitor: a reality check (2026-11-06)
+We tested each candidate with our *honest* User-Agent (one or two requests each):
+
+| Retailer | Result | Verdict |
+|---|---|---|
+| Saturn | Same group and platform as MediaMarkt | Skipped: prices are mostly identical |
+| Cyberport, notebooksbilliger, Conrad | `403` even for `robots.txt` | Blocked |
+| Euronics | `405` + CAPTCHA | Blocked |
+| Otto | robots.txt permissive, but category pages serve a **Kasada** bot challenge | Blocked in practice |
+| Galaxus | Products loaded client-side via an API; bot management + CAPTCHA | No clean route |
+| expert | Product pages allowed, but **prices are loaded client-side from `/api/`**, which robots.txt disallows (prices vary per franchise store) | No clean route |
+| Amazon.de | Conditions of Use explicitly forbid robots/data mining | Excluded |
+| Kaufland, eBay, Proshop, computeruniverse, idealo, Galeria | `403` / CAPTCHA | Blocked |
+| Geizhals | Reachable, but it's an aggregator of other shops' prices | Excluded (not a retailer) |
+| Lidl | Allowed, but only ~45 TVs / 6 laptops / 4 phones online, mostly own-label brands | Too little overlap |
+| **Alternate** | Permissive robots.txt, **publishes `/llms.txt`** (full catalogue for AI tools), server-rendered listings with prices, JSON-LD with EAN | ✅ Chosen |
+| **MEDIMAX** | Electronics chain (ElectronicPartner group), robots.txt only blocks cart/account, asks for `Crawl-delay: 10`, server-rendered tiles + JSON-LD with `gtin` and `mpn` | ✅ Chosen |
+
+**Lessons**
+- robots.txt is necessary but not sufficient. A bot challenge (Kasada, Cloudflare, CAPTCHA)
+  is the site saying "no" too. We **don't** work around it: no browser-UA spoofing, no
+  challenge solving. That is the line between polite scraping and evasion.
+- Many shops render prices **client-side**. If the only route is a robots-disallowed API,
+  that retailer is out of scope.
+- Signals of a bot-friendly site: permissive robots.txt, sitemaps, JSON-LD, `llms.txt`.
+
+### Alternate design: detail pages only once
+Listing pages (24/page) have price, strike price, availability, but **no EAN**. Product pages
+have the EAN in JSON-LD (mislabelled as `gtin8`, though it has 13 digits). Since an EAN never
+changes, we fetch a product page **only the first time we see a product**
+(`store.known_eans` → `RetailerScraper.known_eans`). First run ≈ 315 requests; afterwards ≈ 15.
+
+### MEDIMAX specifics
+- Same "listing + product page once" design; the EAN logic now lives in
+  `RetailerScraper.resolve_ean` and is shared by both scrapers.
+- **Pagination is 0-indexed** (SAP Commerce convention). We verified this live: `page=1`
+  returned 18 products with no overlap with the bare URL. Assuming 1-based pages would have
+  silently skipped the top products every week.
+- OLED TVs aren't under "LCD & LED", so a category can map to **several listing paths**.
+- `Crawl-delay: 10` is honoured automatically: the first run takes ~65 min, weekly runs ~4 min.
+
+### GTIN normalisation (`gtin.py`)
+Every EAN passes through `normalize_gtin`: strip formatting, UPC-A (12 digits) → EAN-13,
+GTIN-14 with a leading 0 → EAN-13, and **validate the check digit**. A typo can't then
+create a false cross-retailer match. The tests caught that our own made-up fixture EANs were
+invalid, which shows the check works.
+
 ## Commands
 ```bash
 python scripts/scrape.py --retailer mediamarkt                    # weekly run (~3 min)
+python scripts/scrape.py --retailer alternate                     # ~2 min weekly (~33 min first run)
+python scripts/scrape.py --retailer medimax                       # ~4 min weekly (~65 min first run)
 python scripts/scrape.py --retailer mediamarkt --category tv --max 12 --dry-run
 python scripts/scrape.py --retailer mediamarkt --from-raw 2026-11-06   # re-parse, no network
 pytest

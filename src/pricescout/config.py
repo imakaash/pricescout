@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     llm_model: str = "qwen3:8b"
     db_path: str = "data/pricescout.duckdb"
 
+    # Our fictional retailer; its internal data (costs, stock, sales) is synthetic.
+    own_company_name: str = "VoltMarkt"
+
     scraper_user_agent: str = "PriceScoutResearchBot/0.1 (educational project)"
     scraper_min_delay_seconds: float = 5.0
     scraper_max_products_per_retailer: int = 300

@@ -55,17 +55,19 @@ def main() -> None:
             min_delay=settings.scraper_min_delay_seconds,
             raw_dir=Path("data/raw") / args.retailer / date.today().isoformat(),
         )
-    scraper = scraper_cls(fetcher)
     day = args.from_raw or date.today().isoformat()
-    run_id = f"{args.retailer}-{day}-{'reparse' if args.from_raw else uuid.uuid4().hex[:6]}"
+    kind = "reparse-" if args.from_raw else ""
+    run_id = f"{args.retailer}-{day}-{kind}{uuid.uuid4().hex[:6]}"
     con = None if args.dry_run else store.connect(settings.db_path)
+    known_eans = store.known_eans(con, args.retailer) if con else {}
+    scraper = scraper_cls(fetcher, known_eans=known_eans)
     if con:
         store.start_run(con, run_id, args.retailer)
 
     all_offers: list[Offer] = []
     errors = 0
     console.print(f"[bold]{run_id}[/bold]: {categories}, max {max_per_cat}/category, "
-                  f"delay ≥{fetcher.delay:.0f}s")
+                  f"delay ≥{fetcher.delay:.0f}s, {len(known_eans)} EANs already known")
     for cat in categories:
         offers: list[Offer] = []
         try:

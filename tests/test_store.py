@@ -4,7 +4,7 @@ from pricescout.db import store
 from pricescout.models import Offer
 
 
-def make_offer(price: float, when: datetime, ean: str | None = "4000000000001") -> Offer:
+def make_offer(price: float, when: datetime, ean: str | None = "4000000000006") -> Offer:
     return Offer(retailer="mediamarkt", retailer_sku="1", category="tv", title="TV",
                  url="https://x/1", ean=ean, price=price, scraped_at=when)
 
@@ -26,4 +26,4 @@ def test_new_week_appends_and_product_keeps_first_seen():
         "SELECT first_seen, last_seen, ean FROM products").fetchall()[0]
     assert first_seen == datetime(2026, 11, 3)
     assert last_seen == datetime(2026, 11, 10)
-    assert ean == "4000000000001"  # a missing EAN later doesn't erase a known one
+    assert ean == "4000000000006"  # a missing EAN later doesn't erase a known one
